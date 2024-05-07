@@ -6,12 +6,14 @@
     <title>Chinese ASR & TTS</title>
 </head>
 <body>
-    <h1>Chinese ASR & TTS</h1>
+    <h1>Chinese Language ASR & TTS</h1>
     <div>
         <h2>Speech-to-Text</h2>
-        <button id="start-recording">Start Recording</button>
-        <button id="stop-recording" disabled>Stop Recording</button>
-        <p id="recognized-text"></p>
+        <form id="upload-form" enctype="multipart/form-data" method="post">
+            <input type="file" id="audio-file" accept="audio/*" required>
+            <button type="button" id="upload-button">Upload and Transcribe</button>
+        </form>
+        <p id="recognized-text">Recognition results will appear here...</p>
     </div>
     <hr>
     <div>
@@ -22,24 +24,25 @@
     </div>
 
     <script>
-        let recognition = new webkitSpeechRecognition() || new SpeechRecognition();
-        recognition.lang = "zh-CN";
+        document.getElementById("upload-button").addEventListener("click", function() {
+            var formData = new FormData();
+            formData.append("file", document.getElementById("audio-file").files[0]);
 
-        recognition.onresult = function(event) {
-            let result = event.results[0][0].transcript;
-            document.getElementById("recognized-text").innerText = result;
-        }
-
-        document.getElementById("start-recording").addEventListener("click", function() {
-            recognition.start();
-            document.getElementById("start-recording").disabled = true;
-            document.getElementById("stop-recording").disabled = false;
-        });
-
-        document.getElementById("stop-recording").addEventListener("click", function() {
-            recognition.stop();
-            document.getElementById("start-recording").disabled = false;
-            document.getElementById("stop-recording").disabled = true;
+            fetch("/speech_to_text", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.recognized_text) {
+                    document.getElementById("recognized-text").innerText = data.recognized_text;
+                } else {
+                    document.getElementById("recognized-text").innerText = "Error: " + data.error;
+                }
+            })
+            .catch(error => {
+                document.getElementById("recognized-text").innerText = "Failed to process the audio.";
+            });
         });
 
         document.getElementById("convert-to-speech").addEventListener("click", function() {
