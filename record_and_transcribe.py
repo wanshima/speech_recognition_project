@@ -2,13 +2,11 @@ import sounddevice as sd
 from scipy.io.wavfile import write
 import whisper
 
-def record_audio(filename, duration, samplerate=16000, device_index=None):
+def record_audio(filename, duration, samplerate=16000, channels=1, dtype='int16'):
     print("Recording...")
     try:
-        if device_index is not None:
-            device_info = sd.query_devices(device_index, kind='input')
-            print(f"Using device: {device_info['name']}")
-        recording = sd.rec(int(duration * samplerate), samplerate=samplerate, channels=1, dtype='int16', device=device_index)
+        frames = int(duration * samplerate)
+        recording = sd.rec(frames, samplerate=samplerate, channels=channels, dtype=dtype)
         sd.wait()  # Wait until the recording is finished
         write(filename, samplerate, recording)
         print(f"Recording saved as {filename}")
@@ -31,7 +29,7 @@ def main():
     # Record audio
     audio_filename = "recorded_audio.wav"
     record_duration = 10  # seconds
-    record_audio(audio_filename, record_duration, device_index=0)  # Use the correct device index (e.g., 0)
+    record_audio(audio_filename, record_duration)  # Use the default device
     
     # Transcribe the recorded audio
     transcription = transcribe_audio(audio_filename)
