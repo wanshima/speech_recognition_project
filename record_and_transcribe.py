@@ -2,13 +2,17 @@ import sounddevice as sd
 from scipy.io.wavfile import write
 import whisper
 
-def record_audio(filename, duration, samplerate=16000, channels=1, dtype='int16'):
+# Set the default sample rate and channels
+sd.default.samplerate = 16000
+sd.default.channels = 1
+
+def record_audio(filename, duration):
     print("Recording...")
     try:
-        frames = int(duration * samplerate)
-        recording = sd.rec(frames, samplerate=samplerate, channels=channels, dtype=dtype)
+        frames = int(duration * sd.default.samplerate)
+        recording = sd.rec(frames, dtype='int16')
         sd.wait()  # Wait until the recording is finished
-        write(filename, samplerate, recording)
+        write(filename, sd.default.samplerate, recording)
         print(f"Recording saved as {filename}")
     except Exception as e:
         print(f"An error occurred while recording audio: {e}")
