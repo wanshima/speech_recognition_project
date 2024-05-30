@@ -16,9 +16,12 @@ asr_model = whisper.load_model("base")
 tts_model_id = 'damo/speech_sambert-hifigan_tts_zh-cn_16k'
 tts_pipeline = pipeline(task=Tasks.text_to_speech, model=tts_model_id)
 
+# Function to record audio
 def record_audio(filename, duration, sample_rate=44100):
+    print("Recording...")
     audio = sd.rec(int(duration * sample_rate), samplerate=sample_rate, channels=1, dtype='int16')
-    sd.wait()  # Wait until recording is finished
+    sd.wait()  
+    print("Recording finished.")
     wav.write(filename, sample_rate, audio)
 
 @app.route('/')
@@ -55,4 +58,4 @@ def synthesize():
     return jsonify({'audio_file': output_filename})
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
+    app.run(debug=True, host='0.0.0.0', port=5000)
