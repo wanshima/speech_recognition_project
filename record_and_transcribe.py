@@ -10,7 +10,7 @@ def record_audio(filename, duration, samplerate=16000, device_name=None):
             device = device_info['index']
         else:
             device = None
-        recording = sd.rec(int(duration * samplerate), samplerate=samplerate, channels=1, dtype='int16', device=device)
+        recording = sd.rec(int(duration * samplerate), samplerate=samplerate, channels=1, dtype='int16')
         sd.wait()  # Wait until the recording is finished
         write(filename, samplerate, recording)
         print(f"Recording saved as {filename}")
@@ -29,7 +29,7 @@ def main():
     # Record audio
     audio_filename = "recorded_audio.wav"
     record_duration = 10  # seconds
-    record_audio(audio_filename, record_duration, device_name="MacBook Pro Microphone, Core Audio")
+    record_audio(audio_filename, record_duration)
     
     # Transcribe the recorded audio
     transcription = transcribe_audio(audio_filename)
