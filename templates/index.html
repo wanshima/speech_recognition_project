@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASR and TTS Chat App</title>
+</head>
+<body>
+    <h1>ASR and TTS Chat App</h1>
+    
+    <h2>Record and Transcribe</h2>
+    <button id="record-btn">Record</button>
+    <p id="transcription-result"></p>
+
+    <h2>Enter Text and Synthesize</h2>
+    <textarea id="text-input" rows="4" cols="50"></textarea><br>
+    <button id="synthesize-btn">Synthesize</button>
+    <audio id="audio-output" controls></audio>
+
+    <script>
+        document.getElementById('record-btn').onclick = function() {
+            fetch('/transcribe', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ duration: 5 })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('transcription-result').innerText = data.transcribed_text;
+            });
+        };
+
+        document.getElementById('synthesize-btn').onclick = function() {
+            const text = document.getElementById('text-input').value;
+            fetch('/synthesize', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ text: text })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('audio-output').src = data.audio_file;
+            });
+        };
+    </script>
+</body>
+</html>

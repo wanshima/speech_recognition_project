@@ -2,8 +2,8 @@ from modelscope.pipelines import pipeline
 from modelscope.utils.constant import Tasks
 from modelscope.outputs import OutputKeys
 
-# Define the text you want to synthesize
-text = '待合成文本'  # This is the text to be synthesized
+# Get the text input from the user
+text = input("Enter the text you want to synthesize: ")
 
 # Define the model ID
 model_id = 'damo/speech_sambert-hifigan_tts_zh-cn_16k'
