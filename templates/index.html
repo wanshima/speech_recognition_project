@@ -2,23 +2,21 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ASR and TTS Chat App</title>
+    <title>ASR and TTS App</title>
 </head>
 <body>
-    <h1>ASR and TTS Chat App</h1>
-    
-    <h2>Record and Transcribe</h2>
-    <button id="record-btn">Record</button>
+    <h1>ASR and TTS App</h1>
+    <h2>Transcribe Audio</h2>
+    <button id="transcribe-btn">Record and Transcribe</button>
     <p id="transcription-result"></p>
 
-    <h2>Enter Text and Synthesize</h2>
+    <h2>Synthesize Text</h2>
     <textarea id="text-input" rows="4" cols="50"></textarea><br>
     <button id="synthesize-btn">Synthesize</button>
     <audio id="audio-output" controls></audio>
 
     <script>
-        document.getElementById('record-btn').onclick = function() {
+        document.getElementById('transcribe-btn').onclick = function() {
             fetch('/transcribe', {
                 method: 'POST',
                 headers: {
@@ -41,9 +39,12 @@
                 },
                 body: JSON.stringify({ text: text })
             })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('audio-output').src = data.audio_file;
+            .then(response => response.blob())
+            .then(blob => {
+                const audioUrl = URL.createObjectURL(blob);
+                const audioElement = document.getElementById('audio-output');
+                audioElement.src = audioUrl;
+                audioElement.play();
             });
         };
     </script>
