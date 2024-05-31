@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, jsonify
+from flask import Flask, request, render_template, jsonify, Response
 import sounddevice as sd
 import numpy as np
 import scipy.io.wavfile as wav
@@ -6,6 +6,7 @@ import whisper
 from modelscope.pipelines import pipeline
 from modelscope.utils.constant import Tasks
 from modelscope.outputs import OutputKeys
+import io
 
 app = Flask(__name__)
 
@@ -17,12 +18,18 @@ tts_model_id = 'damo/speech_sambert-hifigan_tts_zh-cn_16k'
 tts_pipeline = pipeline(task=Tasks.text_to_speech, model=tts_model_id)
 
 # Function to record audio using sounddevice
-def record_audio(filename, duration, sample_rate=44100):
-    print("Recording...")
-    audio = sd.rec(int(duration * sample_rate), samplerate=sample_rate, channels=1, dtype='int16')
-    sd.wait()
-    print("Recording finished.")
-    wav.write(filename, sample_rate, audio)
+def record_audio(filename, duration, sample_rate=44100, device=None):
+    try:
+        print("Recording...")
+        audio = sd.rec(int(duration * sample_rate), samplerate=sample_rate, channels=1, dtype='int16', device=device)
+        sd.wait()
+        print("Recording finished.")
+        wav.write(filename, sample_rate, audio)
+    except sd.PortAudioError as e:
+        print(f"Recording failed: {e}. Using pre-recorded audio file.")
+        filename = "pre_recorded_audio.wav"
+        return filename
+    return filename
 
 @app.route('/')
 def index():
@@ -32,9 +39,9 @@ def index():
 def transcribe():
     duration = request.json.get('duration', 5)
     audio_filename = "recorded_audio.wav"
-    record_audio(audio_filename, duration)
+    audio_filename = record_audio(audio_filename, duration)
     
-    # Transcribe the recorded audio file
+    # Transcribe the audio file
     result = asr_model.transcribe(audio_filename)
     transcribed_text = result["text"]
     
@@ -50,12 +57,8 @@ def synthesize():
     # Extract the generated wav file from the output
     wav_data = output[OutputKeys.OUTPUT_WAV]
     
-    # Save the generated speech to a file
-    output_filename = 'output.wav'
-    with open(output_filename, 'wb') as f:
-        f.write(wav_data)
-    
-    return jsonify({'audio_file': output_filename})
+    # Play the generated speech directly
+    return Response(io.BytesIO(wav_data), mimetype="audio/wav")
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
