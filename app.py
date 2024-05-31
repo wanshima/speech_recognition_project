@@ -27,7 +27,7 @@ def record_audio(filename, duration, sample_rate=44100, device=None):
     except sd.PortAudioError as e:
         print(f"Recording failed: {e}. Using pre-recorded audio file.")
         # Use a pre-recorded audio file if recording fails
-        filename = "pre_recorded_audio.wav"
+        filename = "test1.mp3"
         return filename
     return filename
 
