@@ -16,13 +16,20 @@ asr_model = whisper.load_model("base")
 tts_model_id = 'damo/speech_sambert-hifigan_tts_zh-cn_16k'
 tts_pipeline = pipeline(task=Tasks.text_to_speech, model=tts_model_id)
 
-# Function to record audio
-def record_audio(filename, duration, sample_rate=44100):
-    print("Recording...")
-    audio = sd.rec(int(duration * sample_rate), samplerate=sample_rate, channels=1, dtype='int16')
-    sd.wait()  
-    print("Recording finished.")
-    wav.write(filename, sample_rate, audio)
+# Function to record audio using sounddevice
+def record_audio(filename, duration, sample_rate=44100, device=None):
+    try:
+        print("Recording...")
+        audio = sd.rec(int(duration * sample_rate), samplerate=sample_rate, channels=1, dtype='int16', device=device)
+        sd.wait()
+        print("Recording finished.")
+        wav.write(filename, sample_rate, audio)
+    except sd.PortAudioError as e:
+        print(f"Recording failed: {e}. Using pre-recorded audio file.")
+        # Use a pre-recorded audio file if recording fails
+        filename = "pre_recorded_audio.wav"
+        return filename
+    return filename
 
 @app.route('/')
 def index():
@@ -32,9 +39,10 @@ def index():
 def transcribe():
     duration = request.json.get('duration', 5)
     audio_filename = "recorded_audio.wav"
-    record_audio(audio_filename, duration)
     
-    # Transcribe the recorded audio file
+    audio_filename = record_audio(audio_filename, duration)
+    
+    # Transcribe the audio file
     result = asr_model.transcribe(audio_filename)
     transcribed_text = result["text"]
     
