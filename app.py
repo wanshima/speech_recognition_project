@@ -8,7 +8,6 @@ from modelscope.utils.constant import Tasks
 from modelscope.outputs import OutputKeys
 import io
 import os
-from transformers import MarianMTModel, MarianTokenizer
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -21,11 +20,6 @@ asr_model = whisper.load_model("base")
 tts_model_id = 'damo/speech_sambert-hifigan_tts_zh-cn_16k'
 tts_pipeline = pipeline(task=Tasks.text_to_speech, model=tts_model_id)
 
-# Load MarianMT model and tokenizer for Simplified Chinese translation
-model_name = 'Helsinki-NLP/opus-mt-en-zh'
-tokenizer = MarianTokenizer.from_pretrained(model_name)
-model = MarianMTModel.from_pretrained(model_name)
-
 # Function to record audio using sounddevice
 def record_audio(filename, duration, sample_rate=44100, device=None):
     print("Recording...")
@@ -35,38 +29,29 @@ def record_audio(filename, duration, sample_rate=44100, device=None):
     wav.write(filename, sample_rate, audio)
     return filename
 
-def translate_to_simplified_chinese(text):
-    inputs = tokenizer.encode(text, return_tensors='pt', truncation=True)
-    translated = model.generate(inputs, max_length=512)
-    translated_text = tokenizer.decode(translated[0], skip_special_tokens=True)
-    return translated_text
-
 @app.route('/')
 def index():
     return render_template('index.html')
 
 @app.route('/transcribe', methods=['POST'])
 def transcribe():
-    if 'file' in request.files:
+    if 'file' not in request.files:
+        duration = request.json.get('duration', 5)
+        audio_filename = "recorded_audio.wav"
+        audio_filename = record_audio(audio_filename, duration)
+    else:
         file = request.files['file']
         if file.filename == '':
             return jsonify({'error': 'No selected file'})
         if file:
             audio_filename = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
             file.save(audio_filename)
-    else:
-        duration = request.json.get('duration', 5)
-        audio_filename = "recorded_audio.wav"
-        audio_filename = record_audio(audio_filename, duration)
     
     # Transcribe the audio file
     result = asr_model.transcribe(audio_filename)
     transcribed_text = result["text"]
     
-    # Translate to Simplified Chinese
-    translated_text = translate_to_simplified_chinese(transcribed_text)
-    
-    return jsonify({'transcribed_text': translated_text})
+    return jsonify({'transcribed_text': transcribed_text})
 
 @app.route('/synthesize', methods=['POST'])
 def synthesize():
