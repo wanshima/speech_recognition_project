@@ -8,17 +8,21 @@ from modelscope.utils.constant import Tasks
 from modelscope.outputs import OutputKeys
 import io
 import os
+import opencc
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Initialize Whisper model for ASR
-asr_model = whisper.load_model("base")
+asr_model = whisper.load_model("large")  # You can switch to "base" if preferred
 
 # Initialize ModelScope pipeline for TTS
 tts_model_id = 'damo/speech_sambert-hifigan_tts_zh-cn_16k'
 tts_pipeline = pipeline(task=Tasks.text_to_speech, model=tts_model_id)
+
+# Initialize OpenCC for Traditional to Simplified Chinese conversion
+converter = opencc.OpenCC('t2s.json')
 
 # Function to record audio using sounddevice
 def record_audio(filename, duration, sample_rate=44100, device=None):
@@ -50,8 +54,11 @@ def transcribe():
     # Transcribe the audio file
     result = asr_model.transcribe(audio_filename)
     transcribed_text = result["text"]
+
+    # Convert Traditional Chinese to Simplified Chinese
+    simplified_text = converter.convert(transcribed_text)
     
-    return jsonify({'transcribed_text': transcribed_text})
+    return jsonify({'transcribed_text': simplified_text})
 
 @app.route('/synthesize', methods=['POST'])
 def synthesize():
