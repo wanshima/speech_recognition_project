@@ -10,6 +10,12 @@
     <button id="transcribe-btn">Record and Transcribe</button>
     <p id="transcription-result"></p>
 
+    <h2>Upload and Transcribe Audio File</h2>
+    <form id="upload-form" enctype="multipart/form-data">
+        <input type="file" id="file-input" name="file">
+        <button type="submit">Upload and Transcribe</button>
+    </form>
+
     <h2>Synthesize Text</h2>
     <textarea id="text-input" rows="4" cols="50"></textarea><br>
     <button id="synthesize-btn">Synthesize</button>
@@ -23,6 +29,22 @@
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ duration: 5 })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('transcription-result').innerText = data.transcribed_text;
+            });
+        };
+
+        document.getElementById('upload-form').onsubmit = function(event) {
+            event.preventDefault();
+            var formData = new FormData();
+            var fileInput = document.getElementById('file-input');
+            formData.append('file', fileInput.files[0]);
+
+            fetch('/transcribe', {
+                method: 'POST',
+                body: formData
             })
             .then(response => response.json())
             .then(data => {

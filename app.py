@@ -7,8 +7,11 @@ from modelscope.pipelines import pipeline
 from modelscope.utils.constant import Tasks
 from modelscope.outputs import OutputKeys
 import io
+import os
 
 app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = 'uploads'
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Initialize Whisper model for ASR
 asr_model = whisper.load_model("base")
@@ -19,16 +22,11 @@ tts_pipeline = pipeline(task=Tasks.text_to_speech, model=tts_model_id)
 
 # Function to record audio using sounddevice
 def record_audio(filename, duration, sample_rate=44100, device=None):
-    try:
-        print("Recording...")
-        audio = sd.rec(int(duration * sample_rate), samplerate=sample_rate, channels=1, dtype='int16', device=device)
-        sd.wait()
-        print("Recording finished.")
-        wav.write(filename, sample_rate, audio)
-    except sd.PortAudioError as e:
-        print(f"Recording failed: {e}. Using pre-recorded audio file.")
-        filename = "pre_recorded_audio.wav"
-        return filename
+    print("Recording...")
+    audio = sd.rec(int(duration * sample_rate), samplerate=sample_rate, channels=1, dtype='int16', device=device)
+    sd.wait()
+    print("Recording finished.")
+    wav.write(filename, sample_rate, audio)
     return filename
 
 @app.route('/')
@@ -37,9 +35,17 @@ def index():
 
 @app.route('/transcribe', methods=['POST'])
 def transcribe():
-    duration = request.json.get('duration', 5)
-    audio_filename = "recorded_audio.wav"
-    audio_filename = record_audio(audio_filename, duration)
+    if 'file' not in request.files:
+        duration = request.json.get('duration', 5)
+        audio_filename = "recorded_audio.wav"
+        audio_filename = record_audio(audio_filename, duration)
+    else:
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No selected file'})
+        if file:
+            audio_filename = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+            file.save(audio_filename)
     
     # Transcribe the audio file
     result = asr_model.transcribe(audio_filename)
