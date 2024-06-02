@@ -14,7 +14,7 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Initialize Whisper model for ASR
-asr_model = whisper.load_model("medium")
+asr_model = whisper.load_model("small")
 
 # Initialize ModelScope pipeline for TTS
 tts_model_id = 'damo/speech_sambert-hifigan_tts_zh-cn_16k'
