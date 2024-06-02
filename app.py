@@ -8,6 +8,7 @@ from modelscope.utils.constant import Tasks
 from modelscope.outputs import OutputKeys
 import io
 import os
+import chinese_converter
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -51,7 +52,10 @@ def transcribe():
     result = asr_model.transcribe(audio_filename)
     transcribed_text = result["text"]
     
-    return jsonify({'transcribed_text': transcribed_text})
+    # Convert Traditional Chinese to Simplified Chinese
+    simplified_text = chinese_converter.to_simplified(transcribed_text)
+    
+    return jsonify({'transcribed_text': simplified_text})
 
 @app.route('/synthesize', methods=['POST'])
 def synthesize():
