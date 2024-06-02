@@ -8,11 +8,17 @@ from modelscope.utils.constant import Tasks
 from modelscope.outputs import OutputKeys
 import io
 import os
-import subprocess
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# Initialize Whisper model for ASR
+asr_model = whisper.load_model("base")
+
+# Initialize ModelScope pipeline for TTS
+tts_model_id = 'damo/speech_sambert-hifigan_tts_zh-cn_16k'
+tts_pipeline = pipeline(task=Tasks.text_to_speech, model=tts_model_id)
 
 # Function to record audio using sounddevice
 def record_audio(filename, duration, sample_rate=44100, device=None):
@@ -41,12 +47,9 @@ def transcribe():
             audio_filename = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
             file.save(audio_filename)
     
-    # Run the Whisper command with initial prompt for Simplified Chinese
-    result = subprocess.run(
-        ['whisper', '--language', 'Chinese', '--model', 'large', audio_filename, '--initial_prompt', '以下是普通话的句子。'],
-        capture_output=True, text=True
-    )
-    transcribed_text = result.stdout.strip()
+    # Transcribe the audio file
+    result = asr_model.transcribe(audio_filename)
+    transcribed_text = result["text"]
     
     return jsonify({'transcribed_text': transcribed_text})
 
