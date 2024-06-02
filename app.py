@@ -2,7 +2,6 @@ from flask import Flask, request, render_template, jsonify, Response
 import sounddevice as sd
 import numpy as np
 import scipy.io.wavfile as wav
-import whisper
 import subprocess
 import os
 import io
@@ -10,13 +9,6 @@ import io
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
-# Initialize Whisper model for ASR (change "base" to "large")
-asr_model = whisper.load_model("large")
-
-# Initialize ModelScope pipeline for TTS
-tts_model_id = 'damo/speech_sambert-hifigan_tts_zh-cn_16k'
-tts_pipeline = pipeline(task=Tasks.text_to_speech, model=tts_model_id)
 
 # Function to record audio using sounddevice
 def record_audio(filename, duration, sample_rate=44100, device=None):
@@ -56,4 +48,16 @@ def transcribe():
 
 @app.route('/synthesize', methods=['POST'])
 def synthesize():
-    text = request.json.get('text
+    text = request.json.get('text', '')
+    
+    # Generate speech from the text
+    output = tts_pipeline(input=text, voice='zhitian_emo')
+    
+    # Extract the generated wav file from the output
+    wav_data = output[OutputKeys.OUTPUT_WAV]
+    
+    # Play the generated speech directly
+    return Response(io.BytesIO(wav_data), mimetype="audio/wav")
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)
