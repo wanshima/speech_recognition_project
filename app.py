@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, jsonify, send_file
+from flask import Flask, request, render_template, jsonify, Response, send_file
 import sounddevice as sd
 import numpy as np
 import scipy.io.wavfile as wav
@@ -32,25 +32,27 @@ def record_audio(filename, duration, sample_rate=44100, device=None):
 
 @app.route('/')
 def index():
-    return jsonify({
-        "message": "Welcome to the ASR and TTS API. Use the /transcribe endpoint for transcription and /synthesize endpoint for text-to-speech."
-    })
+    return render_template('index.html')
 
 @app.route('/transcribe', methods=['POST'])
 def transcribe():
-    if 'file' in request.files:
-        file = request.files['file']
-        if file.filename == '':
-            return jsonify({'error': 'No selected file'}), 400
-        audio_filename = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
-        file.save(audio_filename)
-    else:
+    if 'file' not in request.files:
         duration = request.json.get('duration', 5)
         audio_filename = "recorded_audio.wav"
         audio_filename = record_audio(audio_filename, duration)
+    else:
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No selected file'}), 400
+        if file:
+            audio_filename = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+            file.save(audio_filename)
     
+    # Transcribe the audio file
     result = asr_model.transcribe(audio_filename)
     transcribed_text = result["text"]
+    
+    # Convert Traditional Chinese to Simplified Chinese
     simplified_text = chinese_converter.to_simplified(transcribed_text)
     
     return jsonify({'transcribed_text': simplified_text})
@@ -63,9 +65,13 @@ def synthesize():
     if not text:
         return jsonify({'error': 'No text provided'}), 400
     
+    # Generate speech from the text
     output = tts_pipeline(input=text, voice='zhitian_emo')
+    
+    # Extract the generated wav file from the output
     wav_data = output[OutputKeys.OUTPUT_WAV]
     
+    # Save the generated speech to a file
     output_filename = os.path.join(app.config['UPLOAD_FOLDER'], 'output.wav')
     with open(output_filename, 'wb') as f:
         f.write(wav_data)
@@ -74,3 +80,4 @@ def synthesize():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
