@@ -1,0 +1,10 @@
+
+Flask
+sounddevice
+numpy
+scipy
+whisper
+modelscope
+chinese-converter
+torch
+kantts
