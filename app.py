@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, jsonify, Response
+from flask import Flask, request, render_template, jsonify, Response, send_file
 import sounddevice as sd
 import numpy as np
 import scipy.io.wavfile as wav
@@ -43,7 +43,7 @@ def transcribe():
     else:
         file = request.files['file']
         if file.filename == '':
-            return jsonify({'error': 'No selected file'})
+            return jsonify({'error': 'No selected file'}), 400
         if file:
             audio_filename = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
             file.save(audio_filename)
@@ -59,7 +59,11 @@ def transcribe():
 
 @app.route('/synthesize', methods=['POST'])
 def synthesize():
-    text = request.json.get('text', '')
+    data = request.get_json()
+    text = data.get('text', '')
+    
+    if not text:
+        return jsonify({'error': 'No text provided'}), 400
     
     # Generate speech from the text
     output = tts_pipeline(input=text, voice='zhitian_emo')
@@ -67,8 +71,13 @@ def synthesize():
     # Extract the generated wav file from the output
     wav_data = output[OutputKeys.OUTPUT_WAV]
     
-    # Play the generated speech directly
-    return Response(io.BytesIO(wav_data), mimetype="audio/wav")
+    # Save the generated speech to a file
+    output_filename = os.path.join(app.config['UPLOAD_FOLDER'], 'output.wav')
+    with open(output_filename, 'wb') as f:
+        f.write(wav_data)
+    
+    return send_file(output_filename, mimetype='audio/wav')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
