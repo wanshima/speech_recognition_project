@@ -57,6 +57,8 @@ def record_audio(filename, duration, sample_rate=44100, device=None):
 
 ### `GET /`
 
+Displays basic instructions.
+
 ### `POST /transcribe`
 
 Transcribes the audio file or recorded audio to text and converts Traditional Chinese to Simplified Chinese.
